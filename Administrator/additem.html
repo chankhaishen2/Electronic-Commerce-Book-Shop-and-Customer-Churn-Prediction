@@ -1,0 +1,174 @@
+<html lang="en">
+    <head>
+        <title>Add Item</title>
+    </head>
+
+    <style>
+        .TopNavigationBar {
+            overflow: hidden;
+            background-color: #24133f
+        }
+
+        .TopNavigationBar ul {
+            font-size: 25px;
+            list-style-type: none;
+        }
+
+        .TopNavigationBar ul li {
+            padding: 10px 20px;
+            display: inline-block;
+        }
+
+        .TopNavigationBar ul li a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .Content {
+            margin: 30px;
+            text-align: center;
+        }
+
+        .Content h1 {
+            font-size: 40px;
+        }
+
+        .Content label {
+            font-size: 20px;
+        }
+
+        .AdminField {
+            margin: 20px 10px;
+            font-size: 20px;
+            background-color: #edd7f6;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .AddFile {
+            font-size: 20px;
+            margin: 20px 10px;
+        }
+
+        .AdminSubmitButton {
+            background-color: #24133f;
+            color: #ffffff;
+            font-size: 20px;
+            padding: 10px 30px;
+            border-radius: 5px;
+            margin: 20px
+        }
+
+    </style>
+
+    <body>
+        <nav class='TopNavigationBar'>
+            <ul>
+                <li>
+                    <a href='/administrator/inventory.html'>Inventory</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="Content">
+
+            <h1>Add New Item</h1>
+
+            <form method="post" action="/additem" enctype="multipart/form-data">
+                <label>Item Name:</label>
+                <br/>
+                <input type="text" id="itemName" name="itemName" size="80" class="AdminField" required placeholder="Item Name" onchange="handleItemName()"></input>
+
+                <p/>
+                <label>Description: </label>
+                <br/>
+                <textarea id="description" name="description" cols="80" rows="10" required placeholder="Description" class="AdminField" onchange="handleDescription()" ></textarea>
+                
+                <p/>
+                <label>Weight (kg): </label>
+                <br/>
+                <input id="weight" name="weight" type="number" required step="0.001" class="AdminField" onchange="handleWeight()"></input>
+
+                <p/>
+                <label>Price (RM): </label>
+                <br/>
+                <input id="price" name="price" type="number" required step="0.01" class="AdminField" onchange="handlePrice()"></input>
+                
+                <p/>
+                <label>Quantity: </label>
+                <br/>
+                <input id="quantity" name="quantity" type="number" required step="1" class="AdminField" onchange="handleQuantity()"></input>
+
+                <p/>
+                <label>Image: </label>
+                <br/>
+                <input type="file" id="image" name="image" class="AddFile" accept="image/*" onchange="handleImage()"></input>
+
+                <p/>
+                <img id="imagePreview" src="" alt="Preview" width="100" height="100"></img>
+
+                <p/>
+                <input type="submit" value="Add Item" class="AdminSubmitButton"></input>
+            </form>
+        </div>
+    </body>
+
+    <script>
+        function handleItemName() {
+            if (document.getElementById('itemName').value.length > 80) {
+                alert('Item name cannot be longer than 80 characters.');
+            }
+        }
+        
+        function handleDescription() {
+            if (document.getElementById('description').value.length > 800) {
+                alert('Description cannot be longer than 800 characters.');
+            }
+        }
+           
+        function handleWeight() {
+            if (document.getElementById('weight').value < 0.001) {
+                alert('Weight cannot be less than 0.001.');
+            }
+        }
+         
+        function handlePrice() {
+            if (document.getElementById('price').value < 0.01) {
+                alert('Price cannot be less than 0.01.');
+            }
+        }
+
+        function handleQuantity() {    
+            if (document.getElementById('quantity').value < 0) {
+                alert('Quantity cannot be less than 0.');
+            }
+            else if (!/^\d+$/.test(document.getElementById('quantity').value.toString())) {
+                alert('Quantity must be integer.');
+            }
+        }
+         
+        function handleImage() {
+            const imageFile = event.target.files[0];
+            const imagePreview = document.getElementById("imagePreview");
+            const reader = new FileReader();
+
+            reader.addEventListener(
+                "load",
+                ()=>{
+                    imagePreview.src = reader.result;
+                },
+                false
+            );
+
+            if (imageFile) {
+                reader.readAsDataURL(imageFile);
+            }
+            else {
+                imagePreview.src = '';
+            }
+                
+            console.log(imageFile);
+        }
+
+    </script>
+</html>

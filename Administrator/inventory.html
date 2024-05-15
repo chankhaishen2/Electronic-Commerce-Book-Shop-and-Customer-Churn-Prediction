@@ -1,0 +1,192 @@
+<html lang="en">
+    <head>
+        <title>Inventory</title>
+    </head>
+
+    <style>
+        .TopNavigationBar {
+            overflow: hidden;
+            background-color: #24133f
+        }
+
+        .TopNavigationBar ul {
+            font-size: 25px;
+            list-style-type: none;
+        }
+
+        .TopNavigationBar ul li {
+            padding: 10px 20px;
+            display: inline-block;
+        }
+
+        .TopNavigationBar ul li a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .Content {
+            margin: 30px;
+            text-align: center;
+        }
+
+        .Content h1 {
+            font-size: 40px;
+        }
+
+        .Content label {
+            font-size: 20px;
+        }
+
+        .AddItemButton {
+            background-color: #409f42;
+            padding: 10px 15px;
+            font-size: 20px;
+            border-radius: 10px;
+            float: center;
+        }
+
+        .ButtonLink {
+            text-decoration: none;
+            color: #000000;
+        }
+
+        .InventoryTable table, th, td {
+            border-width: 1px;
+            border-color: #000000;
+            border-style: solid;
+            border-collapse: collapse;
+            padding: 10px;
+        }
+
+        .InventoryTable th {
+            background-color: #24133f;
+            color: #f2f2f2;
+            font-size: 20px;
+            text-align: left;
+        }
+
+        .InventoryTable td {
+            background-color: #6d5577;
+            color: #000000;
+            font-size: 20px;
+            text-align: left;
+        }
+
+        .EditButton {
+            background-color: #82a6eb;
+            font-size: 20px;
+            padding: 5px, 10px;
+        }
+
+        .DeleteButton {
+            background-color: #eb6666;
+            font-size: 20px;
+            padding: 5px, 10px;
+        }
+
+    </style>
+
+    <body>
+        <nav class='TopNavigationBar'>
+            <ul>
+                <li>
+                    <a href='/administrator/inventory.html'>Inventory</a>
+                </li>
+                <li>
+                    <button class="DeleteButton" onclick="logout()">Logout</button>
+                </li>
+            </ul>
+        </nav>
+        
+        <div class="Content">
+
+            <h1>Inventory</h1>
+        
+            <button class="AddItemButton"><a class="ButtonLink" href='/administrator/additem.html' >Add New Item</a></button>
+            <p/>
+        
+            <table class="InventoryTable" width="100%">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Weight (kg)</th>
+                        <th>Price (RM)</th>
+                        <th>Quantity</th>
+                        <th>Last Updated</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </body>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        axios.get('http://localhost:5000/inventory').then(response=>{
+            console.log(response);
+        
+            const items = response.data.items;
+            var rows = '';
+
+            for (var i = 0; i < items.length; i++) {
+                const row = `
+                    <tr>
+                        <td><img src=${'http://localhost:5000/item?imageFilename=' + items[i].imageFilename} alt="Item" width="100" height="100"></img></td>
+                        <td>${items[i].itemName}</td>
+                        <td>${items[i].weight.toFixed(3)}</td>
+                        <td>${items[i].price.toFixed(2)}</td>
+                        <td>${items[i].quantity}</td> 
+                        <td>${new Date(items[i].lastUpdated).toISOString().substring(0, 10)}</td>
+                        <td><button class="EditButton"><a class="ButtonLink" href='/administrator/edititem.html?itemid=${items[i]._id}'>Edit</a></button></td>
+                        <td><button class="DeleteButton" onclick="deleteItem('${items[i]._id}')">Delete</button></td>
+                    </tr>
+                `;
+                rows += row;
+            }
+
+            document.getElementById('tableBody').innerHTML = rows;
+        
+        }).catch(error=>{
+            console.log(error);
+    
+            if (error.response.status === 403) {
+                alert(error.response.data.message);
+            }
+            else {
+                alert('Fail to load items');
+            }
+        });
+
+        function deleteItem(id) {
+            axios.delete('http://localhost:5000/item?itemId=' + id).then(response=>{
+                console.log(response);
+
+                window.location.reload();
+
+            }).catch(error=>{
+                console.log(error);
+
+                if (error.response.status === 403) {
+                    alert(error.response.data.message);
+                }
+                else {
+                    alert('Fail to delete item');
+                }
+            });
+        }
+
+        function logout() {
+            axios.delete('/logout').then(response=>{
+                console.log(response);
+            }).catch(error=>{
+                console.log(error);
+            });
+        }
+
+    </script>
+</html>
