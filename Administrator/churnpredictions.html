@@ -33,24 +33,7 @@
             font-size: 40px;
         }
 
-        .Content label {
-            font-size: 20px;
-        }
-
-        .AddItemButton {
-            background-color: #409f42;
-            padding: 10px 15px;
-            font-size: 20px;
-            border-radius: 10px;
-            float: center;
-        }
-
-        .ButtonLink {
-            text-decoration: none;
-            color: #000000;
-        }
-
-        .InventoryTable table, th, td {
+        .ChurnProbabilityTable table, th, td {
             border-width: 1px;
             border-color: #000000;
             border-style: solid;
@@ -58,24 +41,22 @@
             padding: 10px;
         }
 
-        .InventoryTable th {
-            background-color: #24133f;
+        .ChurnProbabilityTable table {
+            overflow-x: auto;
+        }
+
+        .ChurnProbabilityTable th {
+            background-color: #0f1c3e;
             color: #f2f2f2;
             font-size: 20px;
             text-align: left;
         }
 
-        .InventoryTable td {
-            background-color: #6d5577;
+        .ChurnProbabilityTable td {
+            background-color: #5766d3;
             color: #000000;
             font-size: 20px;
             text-align: left;
-        }
-
-        .EditButton {
-            background-color: #82a6eb;
-            font-size: 20px;
-            padding: 5px, 10px;
         }
 
         .DeleteButton {
@@ -103,22 +84,25 @@
         
         <div class="Content">
 
-            <h1>Inventory</h1>
+            <h1>Churn Predictions</h1>
         
-            <button class="AddItemButton"><a class="ButtonLink" href='/administrator/additem.html' >Add New Item</a></button>
-            <p/>
-        
-            <table class="InventoryTable" width="100%">
+            <table class="ChurnProbabilityTable" width="100%">
                 <thead>
                     <tr>
-                        <th>Image</th>
                         <th>Name</th>
-                        <th>Weight (kg)</th>
-                        <th>Price (RM)</th>
-                        <th>Quantity</th>
-                        <th>Last Updated</th>
-                        <th></th>
-                        <th></th>
+                        <th>ses_rec</th>
+                        <th>ses_rec_avg</th>
+                        <th>ses_rec_sd</th>
+                        <th>ses_rec_cv</th>
+                        <th>user_rec</th>
+                        <th>ses_n</th>
+                        <th>int_n</th>
+                        <th>int_n_r</th>
+                        <th>tran_n</th>
+                        <th>tran_n_r</th>
+                        <th>rev_sum</th>
+                        <th>rev_sum_r</th>
+                        <th>Churn Probability</th>
                     </tr>
                 </thead>
 
@@ -126,27 +110,32 @@
             </table>
         </div>
     </body>
-
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
     <script>
-        axios.get('http://localhost:5000/inventory').then(response=>{
+        axios.get('http://localhost:5000/predictchurn').then(response=>{
             console.log(response);
         
-            const items = response.data.items;
+            const predictions = response.data.predictionList;
             var rows = '';
 
-            for (var i = 0; i < items.length; i++) {
+            for (var i = 0; i < predictions.length; i++) {
                 const row = `
                     <tr>
-                        <td><img src=${'http://localhost:5000/item?imageFilename=' + items[i].imageFilename} alt="Item" width="100" height="100"></img></td>
-                        <td>${items[i].itemName}</td>
-                        <td>${items[i].weight.toFixed(3)}</td>
-                        <td>${items[i].price.toFixed(2)}</td>
-                        <td>${items[i].quantity}</td> 
-                        <td>${new Date(items[i].lastUpdated).toISOString().substring(0, 10)}</td>
-                        <td><button class="EditButton"><a class="ButtonLink" href='/administrator/edititem.html?itemid=${items[i]._id}'>Edit</a></button></td>
-                        <td><button class="DeleteButton" onclick="deleteItem('${items[i]._id}')">Delete</button></td>
+                        <td>${predictions[i].name}</td>
+                        <td>${predictions[i].ses_rec.toFixed(1)}</td>
+                        <td>${predictions[i].ses_rec_avg.toFixed(1)}</td>
+                        <td>${predictions[i].ses_rec_sd.toFixed(1)}</td>
+                        <td>${predictions[i].ses_rec_cv.toFixed(1)}</td> 
+                        <td>${predictions[i].user_rec.toFixed(1)}</td>
+                        <td>${predictions[i].ses_n.toFixed(1)}</td>
+                        <td>${predictions[i].int_n.toFixed(1)}</td>
+                        <td>${predictions[i].int_n_r.toFixed(1)}</td>
+                        <td>${predictions[i].tran_n.toFixed(1)}</td>
+                        <td>${predictions[i].tran_n_r.toFixed(1)}</td>
+                        <td>${predictions[i].rev_sum.toFixed(1)}</td>
+                        <td>${predictions[i].rev_sum_r.toFixed(1)}</td>
+                        <td>${predictions[i].churnProbability.toFixed(3)}</td>
                     </tr>
                 `;
                 rows += row;
@@ -159,19 +148,6 @@
     
             alert('Fail to load items');
         });
-
-        function deleteItem(id) {
-            axios.delete('http://localhost:5000/item?itemId=' + id).then(response=>{
-                console.log(response);
-
-                window.location.reload();
-
-            }).catch(error=>{
-                console.log(error);
-
-                alert('Fail to delete item');
-            });
-        }
 
         function logout() {
             axios.delete('/logout').then(response=>{
