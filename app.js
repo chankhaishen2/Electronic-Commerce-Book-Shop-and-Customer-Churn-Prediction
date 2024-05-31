@@ -9,11 +9,15 @@ const crypto = require('crypto');
 const mathjs = require('mathjs');
 
 const TrainingDatasetModel = require('./Database/TrainingDatasetModel');
-const adminLogin = require('./Login/adminLogin');
 const ItemModel = require('./Database/ItemModel');
 const CustomerModel = require('./Database/CustomerModel');
 const OrderModel = require('./Database/OrderModel');
-const { timeStamp } = require('console');
+const saveLogoutTimeStamp = require('./SavePredictors/saveLogoutTimeStamp');
+const saveInteractionTimeStamp = require('./SavePredictors/saveInteractionTimeStamp');
+const saveTransactions = require('./SavePredictors/saveTransactions');
+
+const adminLogin = require('./Login/adminLogin');
+const customerLogin = require('./Login/customerLogin');
 
 require('dotenv').config();
 
@@ -170,6 +174,85 @@ tf.loadLayersModel('file://' + path.join(__dirname + '/ChurnModel/model.json')).
 }).catch(error=>{
     console.log(error);
 });
+
+// Test prediction model
+/*
+TrainingDatasetModel.find().then(results=>{
+
+    const xs = [];
+    const ys = [];
+    
+    for (var i = 0; i < results.length; i++) {
+        const x = [
+            results[i].ses_rec,
+            results[i].ses_rec_avg,
+            results[i].ses_rec_sd,
+            results[i].ses_rec_cv,
+            results[i].user_rec,
+            results[i].ses_n,
+            results[i].int_n,
+            results[i].int_n_r,
+            results[i].tran_n,
+            results[i].tran_n_r,
+            results[i].rev_sum,
+            results[i].rev_sum_r
+        ];
+
+        xs.push(x);
+        ys.push(results[i].target_class);
+    }
+
+    const xs_tensor = tf.tensor(xs);
+
+    tf.loadLayersModel('file://' + path.join(__dirname, '/ChurnModel/model.json')).then(model=>{
+        
+        const predictions = model.predict(xs_tensor);
+
+        predictions.data().then(predicted=>{
+            
+            var truePositive = 0;
+            var falsePositive = 0;
+            var trueNegative = 0;
+            var falseNegative = 0;
+
+            for (var j = 0; j < ys.length; j++) {
+
+                if (predicted[j] >= 0.5) {
+                    if (ys[j] === 1) {
+                        truePositive += 1;
+                    }
+                    else {
+                        falsePositive += 1
+                    }
+                } 
+                else if (predicted[j] < 0.5) {
+                    if (ys[j] === 0) {
+                        trueNegative += 1;
+                    }
+                    else {
+                        falseNegative += 1;
+                    }
+                }
+
+            }
+
+            console.log('True positive:', truePositive);
+            console.log('False positive:', falsePositive);
+            console.log('True negative:', trueNegative);
+            console.log('False negative:', falseNegative);
+
+        }).catch(error=>{
+            console.log('Download predicted values error', error);
+        });
+
+    }).catch(error=>{
+        console.log('Load model error', error);
+    })
+
+}).catch(error=>{
+    console.log('Load training dataset error', error);
+});
+*/
 
 // Create two dummy customers with prediction parameters
 /*
@@ -350,7 +433,7 @@ function getPredictors(logoutTimeStamps, viewAndAddToCartTimeStamps, transaction
         }
     }
 
-    const ses_n = logoutTimeStamps.length;
+    const ses_n = logoutTimeStamps.length === 0 ? 1 : logoutTimeStamps.length;
 
     const int_n = viewAndAddToCartTimeStamps.length + transactions.length;
 
@@ -373,13 +456,16 @@ function getPredictors(logoutTimeStamps, viewAndAddToCartTimeStamps, transaction
 // Test get predictors
 /*
 const [ses_rec1, ses_rec_avg1, ses_rec_sd1, ses_rec_cv1, user_rec1, ses_n1, int_n1, int_n_r1, tran_n1, tran_n_r1, rev_sum1, rev_sum_r1] = getPredictors([{timeStamp: new Date('2024-05-01')}], [], []);
-console.log('test 1', ses_rec1, ses_rec_avg1, user_rec1);
+console.log('test 1', 'ses_rec', ses_rec1, 'ses_rec_avg', ses_rec_avg1, 'user_rec', user_rec1);
 
 const [ses_rec2, ses_rec_avg2, ses_rec_sd2, ses_rec_cv2, user_rec2, ses_n2, int_n2, int_n_r2, tran_n2, tran_n_r2, rev_sum2, rev_sum_r2] = getPredictors([{timeStamp: new Date('2024-05-01')}, {timeStamp: new Date('2024-01-01')}], [], []);
-console.log('test 2', ses_rec2, ses_rec_avg2, user_rec2);
+console.log('test 2', 'ses_rec', ses_rec2, 'ses_rec_avg', ses_rec_avg2, 'user_rec', user_rec2);
 
 const [ses_rec3, ses_rec_avg3, ses_rec_sd3, ses_rec_cv3, user_rec3, ses_n3, int_n3, int_n_r3, tran_n3, tran_n_r3, rev_sum3, rev_sum_r3] = getPredictors([{timeStamp: new Date('2024-05-01')}, {timeStamp: new Date('2024-05-11')}], [], []);
-console.log('test 3', ses_rec3, ses_rec_avg3, user_rec3);
+console.log('test 3', 'ses_rec', ses_rec3, 'ses_rec_avg', ses_rec_avg3, 'user_rec', user_rec3);
+
+const [ses_rec4, ses_rec_avg4, ses_rec_sd4, ses_rec_cv4, user_rec4, ses_n4, int_n4, int_n_r4, tran_n4, tran_n_r4, rev_sum4, rev_sum_r4] = getPredictors([], [], []);
+console.log('test 4', 'ses_n', ses_n4);
 */
 
 // Predict customer churn
@@ -451,7 +537,7 @@ app.get('/predictchurn', adminLogin, (req, res)=>{
     });
 });
 
-app.get('/administrator/churnpredictions.html', (req, res)=>{
+app.get('/administrator/churnpredictions.html', adminLogin, (req, res)=>{
     res.sendFile(path.join(__dirname + '/Administrator/churnpredictions.html'));
 });
 
@@ -480,7 +566,7 @@ crypto.pbkdf2('My$Password123', salt, 100, 512, 'sha-256', (error, derivedKey)=>
 });
 */
 
-app.delete('/logout', (req, res)=>{
+app.delete('/logout', saveLogoutTimeStamp, (req, res)=>{
     res.setHeader('WWW-Authenticate', 'Basic');
     res.sendStatus(401);
 });
@@ -565,17 +651,17 @@ app.post('/additem', adminLogin, upload.single('image'), (req, res)=>{
                     <div class="Content">
                         <h1>Item is Added.</h1>
                         <button class="AdminSubmitButton" ><a class="ButtonLink2" href="/administrator/inventory.html">Inventory</a> </button>
-                        <button class="AddItemButton" ><a class="ButtonLink" href="/administrator/assitem.html"> Add Another Item</a> </button>
+                        <button class="AddItemButton" ><a class="ButtonLink" href="/administrator/additem.html"> Add Another Item</a> </button>
                     </div>
                 </body>
             </html>
-        `)
+        `);
 
     }).catch(error=>{
         console.log(error);
 
         if (error.code === 11000) {     //Duplicate error
-            console.log('duplicate itme name')
+            console.log('duplicate item name')
             res.status(400).send(`
                 <html lang='en'>
                     <head>
@@ -611,7 +697,7 @@ app.get('/administrator/inventory.html', adminLogin, (req, res)=>{
     res.sendFile(path.join(__dirname + '/Administrator/inventory.html'));
 });
 
-app.get('/inventory', adminLogin, (req, res)=>{
+app.get('/items', (req, res)=>{
     console.log(req.userName);
 
     ItemModel.find({}).then(results=>{
@@ -637,7 +723,7 @@ app.get('/administrator/edititem.html', (req, res)=>{
     res.sendFile(path.join(__dirname + '/Administrator/edititem.html'));
 });
 
-app.get('/oneitem', adminLogin, (req, res)=>{
+app.get('/oneitem', (req, res)=>{
     console.log(req.query.itemid);
 
     ItemModel.findById(req.query.itemid).then(result=>{
@@ -651,7 +737,7 @@ app.get('/oneitem', adminLogin, (req, res)=>{
         console.log(error);
         res.sendStatus(500);
     })
-})
+});
 
 app.post('/edititem', adminLogin, upload.single('image'), (req, res)=>{
     console.log(req.userName);
@@ -743,6 +829,208 @@ app.delete('/item', adminLogin, (req, res)=>{
     }).catch(error=>{
         console.log(error);
 
+        res.sendStatus(500);
+    });
+});
+
+app.get('/customer/home.html', (req, res)=>{
+    res.status(200).sendFile(path.join(__dirname, '/Customer/home.html'));
+});
+
+app.get('/checklogin', (req, res)=>{
+    const authorization = req.get('Authorization');
+
+    console.log('authorization', authorization);
+
+    if (authorization == null) {
+        res.status(200).json({
+            message: 'Not logged in'
+        });
+    }
+    else {
+        res.status(200).json({
+            message: 'Logged in'
+        });
+    }
+});
+
+app.get('/customerlogin', customerLogin, (req, res)=>{
+    res.sendStatus(200);
+});
+
+app.get('/customer/register.html', (req, res)=>{
+    res.status(200).sendFile(path.join(__dirname, '/Customer/register.html'));
+});
+
+app.get('/checkduplicate', (req, res)=>{
+    const userName = req.query.username;
+    console.log('check duplicate', userName);
+
+    CustomerModel.findOne({userName: userName}).then(customer=>{
+        console.log('Found customer', customer);
+
+        if (customer == null) {
+            res.status(200).json({
+                message: 'No duplicate'
+            });
+        }
+        else {
+            res.status(200).json({
+                message: 'Duplicate'
+            });
+        }
+    }).catch(error=>{
+        console.log(error);
+        res.sendStatus(500);
+    });
+});
+
+app.post('/register', (req, res)=>{
+    console.log('register', req.body);
+
+    const salt = crypto.randomBytes(32).toString('base64');
+    crypto.pbkdf2(req.body.password, salt, 100, 512, 'sha-256', (error, derivedKey)=>{
+        
+        if (error != null) {
+            console.log('hash password error', error);
+            res.sendStatus(500);
+            return;
+        }
+
+        const password = derivedKey.toString('base64');
+
+        const customer = new CustomerModel({
+            userName: req.body.userName,
+            password: password,
+            salt: salt
+        });
+
+        customer.save().then(response=>{
+            console.log(response);
+    
+            res.status(201).send(`
+                <html lang='en'>
+                    <head>
+                        <title>Register</title>
+                    <head>
+    
+                    <style>
+                        .CustomerSubmitButton {
+                            background-color: #3d2707;
+                            color: #ffffff;
+                            font-size: 20px;
+                            padding: 10px 30px;
+                            border-radius: 5px;
+                            margin: 20px
+                        }
+                        
+                        .ButtonLink {
+                            text-decoration: none;
+                            color: #ffffff;
+                        }
+    
+                        .Content {
+                            margin: 30px;
+                            text-align: center;
+                        }
+                
+                        .Content h1 {
+                            font-size: 40px;
+                        }
+                    </style>
+    
+                    <body>
+                        <div class="Content">
+                            <h1>Registration is completed.</h1>
+                            <button class="CustomerSubmitButton" ><a class="ButtonLink" href="/customer/home.html">Home</a> </button>
+                        </div>
+                    </body>
+                </html>
+            `);
+    
+        }).catch(error=>{
+            console.log(error);
+    
+            if (error.code === 11000) {     //Duplicate error
+                console.log('duplicate customer user name')
+                res.status(400).send(`
+                    <html lang='en'>
+                        <head>
+                            <title>Register</title>
+                        <head>
+    
+                        <style>
+                            .Content {
+                                margin: 30px;
+                                text-align: center;
+                            }
+                    
+                            .Content h1 {
+                                font-size: 40px;
+                            }
+                        </style>
+    
+                        <body>
+                            <div class="Content">
+                                <h1>User name already exists.</h1>
+                            </div>
+                        </body>
+                    </html>
+                `);
+                return;
+            }
+    
+            res.sendStatus(500);
+        });
+    });
+});
+
+app.get('/customer/itemdetails.html', saveInteractionTimeStamp, (req, res)=>{
+    res.status(200).sendFile(path.join(__dirname + '/Customer/itemdetails.html'));
+});
+
+app.post('/addtocart', customerLogin, saveInteractionTimeStamp, (req, res)=>{
+    console.log(req.body);
+    console.log(req.userName);
+
+    CustomerModel.findOne({userName: req.userName}).then(customer=>{
+        console.log('Found customer', customer);
+
+        const cartItems = customer.cartItems;
+
+        var isItemInCart = false;
+
+        for (var i = 0; i < cartItems.length; i++) {
+            if (cartItems[i].itemName === req.body.itemName) {
+                cartItems[i].quantity = cartItems[i].quantity + 1;
+                isItemInCart = true;
+                break;
+            }
+        }
+
+        if (!isItemInCart) {
+            cartItems.push({
+                itemName: req.body.itemName,
+                weight: req.body.weight,
+                price: req.body.price,
+                quantity: 1
+            });
+        }
+
+        CustomerModel.findOneAndUpdate({userName: req.userName}, {cartItems: cartItems}).then(response=>{
+            console.log('Updated cart items', response);
+
+            res.status(201).send(`
+                <h1>Item is added to cart.</h1>
+            `);
+
+        }).catch(error=>{
+            console.log('Update cart item error', error);
+            res.sendStatus(500);
+        });
+
+    }).catch(error=>{
+        console.log('Find customer error', error);
         res.sendStatus(500);
     });
 });

@@ -1,8 +1,8 @@
 const crypto = require('crypto');
 
-const AdministratorModel = require('../Database/AdministratorModel');
+const CustomerModel = require('../Database/CustomerModel');
 
-function adminLogin(req, res, next) {
+function customerLogin(req, res, next) {
     const authorization = req.header('Authorization');
 
     if (authorization == null) {
@@ -18,10 +18,10 @@ function adminLogin(req, res, next) {
 
     console.log('user name:', userName, 'password:', password);
 
-    AdministratorModel.findOne({userName: userName}).then(administrator=>{
-        console.log('login found administrator', administrator);
+    CustomerModel.findOne({userName: userName}).then(customer=>{
+        console.log('login found customer', customer);
 
-        if (administrator == null) {
+        if (customer == null) {
             console.log('no such username');
             
             res.setHeader("WWW-Authenticate", "Basic");
@@ -30,9 +30,9 @@ function adminLogin(req, res, next) {
             return;
         }
 
-        crypto.pbkdf2(password, administrator.salt, 100, 512, 'sha-256', (error, derivedKey)=>{
+        crypto.pbkdf2(password, customer.salt, 100, 512, 'sha-256', (error, derivedKey)=>{
             if (error != null) {
-                console.log('administrator login error', error);
+                console.log('customer login error', error);
                 res.sendStatus(500);
                 return;
             }
@@ -40,20 +40,20 @@ function adminLogin(req, res, next) {
             const derivedPassword = derivedKey.toString('base64');
             console.log('password:', derivedPassword);
 
-            if (derivedPassword === administrator.password) {
+            if (derivedPassword === customer.password) {
                 req.userName = userName;
                 next();
             }
             else {
-                console.log('administrator login fail: password not match');
+                console.log('customer login fail: password not match');
                 
                 res.setHeader("WWW-Authenticate", "Basic");
                 res.sendStatus(401);
             }
         });
     }).catch(error=>{
-        console.log('Find administrator error', error);
+        console.log('Find customer error', error);
     });
 }
 
-module.exports = adminLogin;
+module.exports = customerLogin;

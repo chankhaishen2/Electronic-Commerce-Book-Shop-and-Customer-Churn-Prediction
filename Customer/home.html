@@ -1,0 +1,208 @@
+<html lang="en">
+    <head>
+        <title>Home</title>
+    </head>
+
+    <style>
+        .TopNavigationBar {
+            overflow: hidden;
+            background-color: #3d2707
+        }
+
+        .TopNavigationBar ul {
+            font-size: 25px;
+            list-style-type: none;
+        }
+
+        .TopNavigationBar ul li {
+            padding: 10px 20px;
+            display: inline-block;
+        }
+
+        .TopNavigationBar ul li a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .Content {
+            margin: 30px;
+            text-align: center;
+        }
+
+        .Content h1 {
+            font-size: 40px;
+        }
+
+        .RegisterButton {
+            background-color: #329a4a;
+            padding: 10px 15px;
+            font-size: 20px;
+            border-radius: 10px;
+            float: center;
+        }
+
+        .ButtonLink {
+            text-decoration: none;
+            color: #000000;
+        }
+
+        .DeleteButton {
+            background-color: #eb6666;
+            font-size: 20px;
+            padding: 5px, 10px;
+        }
+
+        .GridList {
+            display: grid;
+            grid-template-columns: 50% 50%;
+        }
+
+        .ListItem {
+            list-style-type: none;
+            background-color: #b7b2ac;
+            border-radius: 10px;
+            margin: 20px;
+        }
+
+        .ItemImage {
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            margin: 10px;
+        }
+
+        .ItemName {
+            font-size: 30px;
+            color: #432f07;
+            margin: 0px;
+        }
+
+        .ItemPrice {
+            font-size: 40px;
+            color: #396309;
+            margin: 0px;
+        }
+
+        .DetailsButton {
+            font-size: 25px;
+            border-radius: 5px;
+            background-color: #3d2707;
+            margin: 10px;
+        }
+
+        .DetailsButton a {
+            color: #ffffff;
+            text-decoration: none;
+        }
+
+        .LoginButton {
+            padding: 10px;
+            font-size: 20px;
+            background-color: #e18d0f;
+        }
+
+    </style>
+
+    <body>
+        <nav class='TopNavigationBar'>
+            <ul>
+                <li>
+                    <a href='/customer/home.html'>Home</a>
+                </li>
+                <li>
+                    <a>Cart</a>
+                </li>
+                <li>
+                    <a>Orders</a>
+                </li>
+                <li id="registerOrLogoutButton"></li>
+            </ul>
+        </nav>
+        
+        <div class="Content">
+
+            <h1>Home</h1>
+
+            <ul id="items" class="GridList"></ul>
+        
+        </div>
+    </body>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        axios.get('http://localhost:5000/checklogin').then(response=>{
+            console.log(response);
+
+            if (response.data.message === 'Not logged in') {
+                document.getElementById('registerOrLogoutButton').innerHTML = `
+                    <button class="RegisterButton">
+                        <a class="ButtonLink" href="/customer/register.html">Register</a>
+                    </button>
+                    <button class="LoginButton" onclick="login()">Login</button>
+                `;
+            }
+            else {
+                document.getElementById('registerOrLogoutButton').innerHTML = `
+                    <button class="DeleteButton" onclick="logout()">Logout</button>
+                `;
+            }
+        }).catch(error=>{
+            console.log(error);
+
+            document.getElementById('registerOrLogoutButton').innerHTML = `
+                <button class="RegisterButton">
+                    <a class="ButtonLink" href="/customer/register.html">Register</a>
+                </button>
+                <button class="LoginButton" onclick="login()">Login</button>
+            `;
+        });
+
+        axios.get('http://localhost:5000/items').then(response=>{
+            console.log(response);
+        
+            const items = response.data.items;
+            var lists = '';
+
+            for (var i = 0; i < items.length; i++) {
+                lists += `
+                    <li class='ListItem'>
+                        <img class='ItemImage' src='http://localhost:5000/item?imageFilename=${items[i].imageFilename}' alt='Item'><img>
+                        <p class='ItemName'>${items[i].itemName}</p>
+                        <p class='ItemPrice'>RM${items[i].price.toFixed(2)}</p>
+                        <button class='DetailsButton'><a href='/customer/itemdetails.html?itemid=${items[i]._id}'>Details</a></button>
+                    </li>
+                `;
+            }
+
+            document.getElementById('items').innerHTML = lists;
+        
+        }).catch(error=>{
+            console.log(error);
+    
+            alert('Fail to load items');
+        });
+
+        function logout() {
+            axios.delete('/logout').then(response=>{
+                console.log(response);
+            }).catch(error=>{
+                console.log(error);
+            });
+        }
+
+        function login() {
+            axios.get('/customerlogin').then(response=>{
+                console.log(response);
+
+                document.getElementById('registerOrLogoutButton').innerHTML = `
+                    <button class="DeleteButton" onclick="logout()">Logout</button>
+                `;
+
+            }).catch(error=>{
+                console.log(error);
+            });
+        }
+
+    </script>
+</html>

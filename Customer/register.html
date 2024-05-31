@@ -1,0 +1,131 @@
+<html lang="en">
+    <head>
+        <title>Register</title>
+    </head>
+
+    <style>
+        .TopNavigationBar {
+            overflow: hidden;
+            background-color: #3d2707
+        }
+
+        .TopNavigationBar ul {
+            font-size: 25px;
+            list-style-type: none;
+        }
+
+        .TopNavigationBar ul li {
+            padding: 10px 20px;
+            display: inline-block;
+        }
+
+        .TopNavigationBar ul li a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .Content {
+            margin: 30px;
+            text-align: center;
+        }
+
+        .Content h1 {
+            font-size: 40px;
+        }
+
+        .Content label {
+            font-size: 20px;
+        }
+
+        .CustomerField {
+            margin: 20px 10px;
+            font-size: 20px;
+            background-color: #cfc4b3;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .CustomerSubmitButton {
+            background-color: #3d2707;
+            color: #ffffff;
+            font-size: 20px;
+            padding: 10px 30px;
+            border-radius: 5px;
+            margin: 20px
+        }
+
+    </style>
+
+    <body>
+        <nav class='TopNavigationBar'>
+            <ul>
+                <li>
+                    <a href='/customer/home.html'>Home</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="Content">
+
+            <h1>Register</h1>
+
+            <form method="post" action="/register" enctype="application/x-www-form-urlencoded">
+                <label>User Name:</label>
+                <br/>
+                <input type="text" id="userName" name="userName" size="20" class="CustomerField" required placeholder="User Name" onchange="handleUserName()"></input>
+
+                <p/>
+                <label>Password:</label>
+                <br/>
+                <input type="password" id="password" name="password" size="20" class="CustomerField" required placeholder="Password" onchange="handlePassword()"></input>
+
+                <p/>
+                <label>Repeat password:</label>
+                <br/>
+                <input type="password" id="repeatPassword" size="20" class="CustomerField" required placeholder="Repeat Password" onchange="handleRepeatPassword()"></input>
+
+                <p/>
+                <input type="submit" value="Register" class="CustomerSubmitButton"></input>
+            </form>
+        </div>
+    </body>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        function handleUserName() {
+            if (document.getElementById('userName').value.length > 20) {
+                alert('User name cannot be longer than 20 characters.');
+            }
+            else {
+                const userName = document.getElementById('userName').value;
+
+                axios.get('http://localhost:5000/checkduplicate?username=' + userName).then(response=>{
+                    console.log(response);
+
+                    if (response.data.message === 'Duplicate') {
+                        alert('User name already exists.');
+                    }
+
+                }).catch(error=>{
+                    console.log(error);
+                });
+            }
+        }
+
+        function handlePassword() {
+            const password = document.getElementById('password').value;
+
+            if (!/\d/.test(password) || !/[a-z]/.test(password) || !/[A-Z]/.test(password) || password.length < 8) {
+                alert('Password must be at least 8 characters long and contain number, lower-case alphabet and upper-case alphabet.');
+            }
+        }
+
+        function handleRepeatPassword() {
+            if (document.getElementById('repeatPassword').value !== document.getElementById('password').value) {
+                alert('Password and repeat password not match.')
+            }
+        }
+
+    </script>
+</html>
