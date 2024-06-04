@@ -1013,7 +1013,8 @@ app.post('/addtocart', customerLogin, saveInteractionTimeStamp, (req, res)=>{
                 itemName: req.body.itemName,
                 weight: req.body.weight,
                 price: req.body.price,
-                quantity: 1
+                quantity: 1,
+                imageFilename: req.body.imageFilename
             });
         }
 
@@ -1033,6 +1034,278 @@ app.post('/addtocart', customerLogin, saveInteractionTimeStamp, (req, res)=>{
         console.log('Find customer error', error);
         res.sendStatus(500);
     });
+});
+
+app.get('/customer/cart.html', customerLogin, (req, res)=>{
+    res.sendFile(path.join(__dirname, '/Customer/cart.html'));
+});
+
+app.get('/cartitems', customerLogin, (req, res)=>{
+    console.log(req.userName);
+
+    CustomerModel.findOne({userName: req.userName}).then(customer=>{        
+        console.log('Found customer', customer);
+
+        res.status(200).json({
+            cartItems: customer.cartItems
+        });
+
+    }).catch(error=>{
+        console.log('Find customer error', error);
+        res.sendStatus(500);
+    });
+});
+
+app.post('/addone', customerLogin, (req, res)=>{
+    console.log(req.userName, req.query.itemName);
+
+    CustomerModel.findOne({userName: req.userName}).then(customer=>{
+        console.log('Found customer', customer);
+
+        const cartItems = customer.cartItems;
+
+        for (var i = 0; i < cartItems.length; i++) {
+            if (cartItems[i].itemName === req.query.itemName) {
+                cartItems[i].quantity += 1;
+                break;
+            }
+        }
+
+        CustomerModel.findOneAndUpdate({userName: req.userName}, {cartItems: cartItems}).then(response=>{
+            console.log('Updated cart items', response);
+
+            res.sendStatus(201);
+
+        }).catch(error=>{
+            console.log('Update cart items error', error);
+            res.sendStatus(500);
+        });
+
+    }).catch(error=>{
+        console.log('Find customer error', error);
+        res.sendStatus(500);
+    });
+});
+
+app.delete('/minusone', customerLogin, (req, res)=>{
+    console.log(req.userName, req.query.itemName);
+
+    CustomerModel.findOne({userName: req.userName}).then(customer=>{
+        console.log('Found customer', customer);
+
+        const cartItems = customer.cartItems;
+        var isQuantityZero = false;
+        var toRemove;
+
+        for (var i = 0; i < cartItems.length; i++) {
+            if (cartItems[i].itemName === req.query.itemName) {
+                
+                cartItems[i].quantity -= 1;
+
+                if (cartItems[i].quantity === 0) {
+                    isQuantityZero = true;
+                    toRemove = i;
+                }
+
+                break;
+            }
+        }
+
+        if (isQuantityZero) {
+            cartItems.splice(toRemove, 1);
+        }
+
+        CustomerModel.findOneAndUpdate({userName: req.userName}, {cartItems: cartItems}).then(response=>{
+            console.log('Updated cart items', response);
+
+            res.sendStatus(204);
+
+        }).catch(error=>{
+            console.log('Update cart item error', error);
+            res.sendStatus(500);
+        });
+
+    }).catch(error=>{
+        console.log('Find customer error', error);
+        res.sendStatus(500);
+    });
+});
+
+function checkQuantity(req, res, next) {
+    console.log(req.userName);
+
+    CustomerModel.findOne({userName: req.userName}).then(customer=>{
+        console.log('Found customer', customer);
+
+        if (customer.cartItems == null || customer.cartItems.length === 0) {
+            console.log('No item in cart');
+            
+            res.status(400).json({
+                message: 'No item in cart.'
+            });
+
+            return;
+        }
+
+        const cartItems = customer.cartItems;
+        const checkQuantityPromises = [];
+        const itemQuantities = [];
+
+        for (var i = 0; i < cartItems.length; i++) {
+
+            const promise = new Promise((resolve, reject)=>{
+
+                ItemModel.findOne({itemName: cartItems[i].itemName}).then(item=>{
+                    console.log('Found item', item);
+
+                    itemQuantities.push({
+                        itemName: item.itemName,
+                        quantity: item.quantity
+                    });
+
+                    resolve();
+
+                }).catch(error=>{
+                    console.log('Find item error', error);
+                    reject();
+                });
+
+            });
+
+            checkQuantityPromises.push(promise);
+        }
+
+        Promise.all(checkQuantityPromises).then(()=>{
+            console.log('Checked quantity', itemQuantities);
+
+            const itemLeftQuantities = [];
+
+            for (var i = 0; i < cartItems.length; i++) {
+
+                for (var j = 0; j < itemQuantities.length; j++) {
+
+                    if (cartItems[i].itemName === itemQuantities[j].itemName) {
+
+                        const leftQuantity = itemQuantities[j].quantity - cartItems[i].quantity;
+
+                        if (leftQuantity < 0) {
+                            console.log(cartItems[i].itemName, 'is out of stock.');
+
+                            res.status(400).json({
+                                message: cartItems[i].itemName + ' is out of stock.'
+                            });
+                            
+                            return;
+                        }
+
+                        itemLeftQuantities.push({
+                            itemName: cartItems[i].itemName,
+                            leftQuantity: leftQuantity
+                        });
+
+                        break;
+                    }
+                }
+            }
+
+            console.log('Left quantities', itemLeftQuantities);
+            req.itemLeftQuantities = itemLeftQuantities;
+            next();
+
+        }).catch(error=>{
+            console.log('Check quantity error', error);
+            res.sendStatus(500);
+        });
+
+    }).catch(error=>{
+        console.log('Find customer error', error);
+        res.sendStatus(500);
+    });
+}
+
+function placeOrder(req, res, next) {
+    console.log(req.userName, req.itemLeftQuantities);
+
+    CustomerModel.findOne({userName: req.userName}).then(customer=>{
+        console.log('Found customer', customer);
+
+        const cartItems = customer.cartItems;
+        var amount = 0;
+        const items = [];
+
+        for (var i = 0; i < cartItems.length; i++) {
+            amount += cartItems[i].price * cartItems[i].quantity;
+
+            items.push({
+                itemName: cartItems[i].itemName,
+                weight: cartItems[i].weight,
+                price: cartItems[i].price,
+                quantity: cartItems[i].quantity
+            })
+        }
+
+        console.log('Amount', amount);
+
+        const order = new OrderModel({
+            customerName: req.userName,
+            items: items,
+            amount: amount
+        });
+
+        order.save().then(response=>{
+            console.log('Saved order', response);
+
+            CustomerModel.findOneAndUpdate({userName: req.userName}, {cartItems: []}).then(response=>{
+                console.log('Cleared cart', response);
+
+                const updateItemPromises = [];
+
+                for (var i = 0; i < req.itemLeftQuantities.length; i++) {
+
+                    const promise = new Promise((resolve, reject)=>{
+                        
+                        ItemModel.findOneAndUpdate({itemName: req.itemLeftQuantities[i].itemName}, {quantity: req.itemLeftQuantities[i].leftQuantity}).then(response=>{
+                            console.log('Updated item left quantity', response);
+                            resolve();
+
+                        }).catch(error=>{
+                            console.log('Update item left quantity error', error);
+                            reject();
+                        });
+                    });
+
+                    updateItemPromises.push(promise);
+                }
+
+                Promise.all(updateItemPromises).then(()=>{
+                    console.log('Updated all item');
+                    next();
+
+                }).catch(error=>{
+                    console.log('Update all item error', error);
+                    res.sendStatus(500);
+                })
+
+            }).catch(error=>{
+                console.log('Clear cart error', error);
+                res.sendStatus(500);
+            })
+
+        }).catch(error=>{
+            console.log('Save order error' ,error);
+            res.sendStatus(500);
+        })
+
+    }).catch(error=>{
+        console.log('Find customer error', error);
+        res.sendStatus(500);
+    });
+}
+
+app.post('/placeorder', customerLogin, checkQuantity, saveTransactions, placeOrder, (req, res)=>{
+    res.status(201).send(`
+        <h1>The order has been placed.</h1>
+    `);
 });
 
 app.listen(process.env.PORT, ()=>{

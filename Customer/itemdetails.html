@@ -66,7 +66,7 @@
                     <a href="/customer/home.html">Home</a>
                 </li>
                 <li>
-                    <a>Cart</a>
+                    <a href="/customer/cart.html">Cart</a>
                 </li>
                 <li>
                     <a>Orders</a>
@@ -135,7 +135,8 @@
             axios.post('http://localhost:5000/addtocart', {
                 itemName: item.itemName,
                 weight: item.weight,
-                price: item.price
+                price: item.price,
+                imageFilename: item.imageFilename
             }, {
                 headers: {
                     'Content-Type': 'application/x-www-form-urlencoded'

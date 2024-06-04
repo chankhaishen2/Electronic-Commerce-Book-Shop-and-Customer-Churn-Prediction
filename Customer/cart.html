@@ -1,0 +1,212 @@
+<html lang="en">
+    <head>
+        <title>Cart</title>
+    </head>
+    
+    <style>
+        .TopNavigationBar {
+            overflow: hidden;
+            background-color: #3d2707;
+        }
+
+        .TopNavigationBar ul {
+            font-size: 25px;
+            list-style-type: none;
+        }
+
+        .TopNavigationBar ul li {
+            padding: 10px 20px;
+            display: inline-block;
+        }
+
+        .TopNavigationBar ul li a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .Content {
+            margin: 30px;
+            text-align: center;
+        }
+
+        .Content h1 {
+            font-size: 40px;
+        }
+
+        .CartTable {
+            font-size: 25px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .CartTable th {
+            background-color: #0c4703;
+            color: #ffffff;
+            padding: 10px;
+        }
+
+        .CartTable td {
+            background-color: #81cf75;
+            color: #000000;
+            padding: 10px;
+        }
+
+        .LastRow td {
+            background-color: #0c4703;
+            color: #ffffff;
+        }
+
+        .AddButton {
+            font-size: 15px;
+            background-color: #0b690fdf;
+            color: #000000;
+        }
+
+        .MinusButton {
+            font-size: 15px;
+            background-color: #ce1818;
+            color: #000000;
+        }
+
+        .PlaceOrderButton {
+            font-size: 25px;
+            padding: 10px;
+            background-color: #3d2707;
+            color: #ffffff;
+            border-radius: 10px;
+            margin: 20px;
+        }
+
+    </style>
+
+    <body>
+        <nav class="TopNavigationBar">
+            <ul>
+                <li>
+                    <a href="/customer/home.html">Home</a>
+                </li>
+                <li>
+                    <a href="/customer/cart.html">Cart</a>
+                </li>
+                <li>
+                    <a>Orders</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="Content" id="content">
+            
+            <h1>Cart</h1>
+
+            <table class="CartTable">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Name</th>
+                        <th>Weight (one item)</th>
+                        <th>Price (one item)</th>
+                        <th>Quantity</th>
+                        <th></th>
+                        <th></th>
+                        <th>Total price</th>
+                    </tr>
+                </thead>
+                <tbody id="cartItems"></tbody>
+            </table>
+
+            <button class="PlaceOrderButton" onclick="placeOrder()" id="placeOrderButton">Place Order</button>
+
+        </div>
+    </body>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        axios.get('http://localhost:5000/cartitems').then(result=>{
+            console.log(result);
+
+            const cartItems = result.data.cartItems;
+            var rows = '';
+            var totalAmount = 0;
+
+            for (var i = 0; i < cartItems.length; i++) {
+                const totalPrice = cartItems[i].price * cartItems[i].quantity;
+                totalAmount += totalPrice;
+
+                rows += `
+                    <tr>
+                        <td><img src="http://localhost:5000/item?imageFilename=${cartItems[i].imageFilename}" width="200" height="200"></img></td>
+                        <td>${cartItems[i].itemName}</td>
+                        <td>${cartItems[i].weight.toFixed(3)}kg</td>
+                        <td>RM${cartItems[i].price.toFixed(2)}</td>
+                        <td>${cartItems[i].quantity}</td>
+                        <td><button class='AddButton' onclick="addOne('${cartItems[i].itemName}')">Add One</button></td>
+                        <td><button class='MinusButton' onclick="minusOne('${cartItems[i].itemName}')">Minus One</button></td>
+                        <td>RM${totalPrice.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            if (cartItems.length === 0) {
+                rows = `
+                    <tr>
+                        <td colspan='8'>No item in cart</td>    
+                    </tr>
+                `;
+            }
+            else {
+                rows += `
+                    <tr class='LastRow'>
+                        <td colspan='7'>Total Amount</td>
+                        <td>RM${totalAmount.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            document.getElementById('cartItems').innerHTML = rows;
+
+        }).catch(error=>{
+            console.log(error);
+        });
+
+        function addOne(itemName) {
+            axios.post('http://localhost:5000/addone?itemName=' + itemName).then(response=>{
+                console.log(response);
+
+                window.location.reload();
+
+            }).catch(error=>{
+                console.log(error);
+            })
+        }
+
+        function minusOne(itemName) {
+            axios.delete('http://localhost:5000/minusone?itemName=' + itemName).then (response=>{
+                console.log(response);
+
+                window.location.reload();
+
+            }).catch(error=>{
+                console.log(error);
+            })
+        }
+
+        function placeOrder() {
+            axios.post('/placeorder').then(response=>{
+                console.log(response);
+
+                document.getElementById('content').innerHTML = response.data;
+
+            }).catch(error=>{
+                console.log(error);
+
+                if (error.response.status === 400) {
+                    alert(error.response.data.message);
+                }
+                else {
+                    alert('Fail to place order.');
+                }
+            });
+        }
+    </script>
+</html>

@@ -38,6 +38,10 @@ const customerSchema = new mongoose.Schema({
                 type: Number,
                 min: 1,
                 required: true
+            },
+            imageFilename: {
+                type: String,
+                trim: true
             }
         }
     ],

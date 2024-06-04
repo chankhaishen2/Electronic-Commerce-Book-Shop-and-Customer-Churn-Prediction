@@ -32,7 +32,7 @@ function saveTransactions(req, res, next) {
 
         var amount = 0;
         for (var i = 0; i < customer.cartItems.length; i++) {
-            amount += customer.cartItems[i].price;
+            amount += customer.cartItems[i].price * customer.cartItems[i].quantity;
         }
 
         const transactions = customer.transactions == null ? [] : customer.transactions;
