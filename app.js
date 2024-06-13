@@ -1308,6 +1308,104 @@ app.post('/placeorder', customerLogin, checkQuantity, saveTransactions, placeOrd
     `);
 });
 
+app.get('/administrator/orders.html', adminLogin, (req, res)=>{
+    res.status(200).sendFile(path.join(__dirname, '/Administrator/orders.html'));
+});
+
+app.get('/ordersforadmin', adminLogin, (req, res)=>{
+    console.log(req.userName);
+
+    OrderModel.find().then(orders=>{
+        console.log('Found orders', orders);
+
+        res.status(200).json({
+            orders: orders
+        });
+
+    }).catch(error=>{
+        console.log('Find order error', error);
+        res.sendStatus(500);
+    });
+});
+
+app.get('/customer/orders.html', customerLogin, (req, res)=>{
+    res.status(200).sendFile(path.join(__dirname, '/Customer/orders.html'));
+});
+
+app.get('/ordersforcustomer', customerLogin, (req, res)=>{
+    console.log(req.userName);
+
+    OrderModel.find({customerName: req.userName}).then(orders=>{
+        console.log('Found orders', orders);
+
+        res.status(200).json({
+            orders: orders
+        });
+
+    }).catch(error=>{
+        console.log('Find orders error', error);
+        res.sendStatus(500);
+    });
+});
+
+app.get('/administrator/orderdetails.html', adminLogin, (req, res)=>{
+    res.status(200).sendFile(path.join(__dirname, '/Administrator/orderdetails.html'));
+});
+
+app.get('/oneorderforadmin', adminLogin, (req, res)=>{
+    console.log(req.userName, req.query.orderId);
+
+    OrderModel.findOne({_id: req.query.orderId}).then(order=>{
+        console.log('Found order', order);
+
+        if (order == null) {
+            
+            res.status(400).json({
+                message: 'No such order.'
+            });
+
+            return;
+        }
+
+        res.status(200).json({
+            order: order
+        });
+
+    }).catch(error=>{
+        console.log('Find order error', error);
+        res.sendStatus(500);
+    });
+});
+
+app.get('/customer/orderdetails.html', customerLogin, (req, res)=>{
+    res.status(200).sendFile(path.join(__dirname, '/Customer/orderdetails.html'));
+});
+
+app.get('/oneorderforcustomer', customerLogin, (req, res)=>{
+    console.log(req.userName, req.query.orderId);
+
+    OrderModel.findOne({_id: req.query.orderId, customerName: req.userName}).then(order=>{
+        console.log('Found order', order);
+
+        if (order == null) {
+
+            res.status(400).json({
+                message: 'No such order.'
+            });
+
+            return;
+        }
+
+        res.status(200).json({
+            order: order
+        });
+
+    }).catch(error=>{
+        console.log('Find order error', error);
+        res.sendStatus(500);
+    });
+});
+
 app.listen(process.env.PORT, ()=>{
     console.log('Listening from port', process.env.PORT);
 });

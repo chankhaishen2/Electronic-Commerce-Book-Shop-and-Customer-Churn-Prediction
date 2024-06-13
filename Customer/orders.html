@@ -1,0 +1,139 @@
+<html lang="en">
+    <head>
+        <title>Orders</title>
+    </head>
+
+    <style>
+        .TopNavigationBar {
+            overflow: hidden;
+            background-color: #3d2707;
+        }
+
+        .TopNavigationBar ul {
+            font-size: 25px;
+            list-style-type: none;
+        }
+
+        .TopNavigationBar ul li {
+            padding: 10px 20px;
+            display: inline-block;
+        }
+
+        .TopNavigationBar ul li a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .Content {
+            margin: 30px;
+            text-align: center;
+        }
+
+        .Content h1 {
+            font-size: 40px;
+        }
+
+        .OrdersTable {
+            width: 100%;
+        }
+
+        .OrdersTable th {
+            background-color: #085267;
+            color: #ffffff;
+            padding: 10px;
+            font-size: 20px;
+            text-align: left;
+        }
+
+        .OrdersTable td {
+            background-color: #08acda;
+            color: #000000;
+            padding: 10px;
+            font-size: 20px;
+            text-align: left;
+        }
+
+        .ButtonLink {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .DetailsButton {
+            background-color: #3d2707;
+            font-size: 20px;
+            padding: 5px 10px;
+        }
+
+    </style>
+
+    <body>
+        <nav class="TopNavigationBar">
+            <ul>
+                <li>
+                    <a href="/customer/home.html">Home</a>
+                </li>
+                <li>
+                    <a href="/customer/cart.html">Cart</a>
+                </li>
+                <li>
+                    <a href="/customer/orders.html">Orders</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="Content">
+
+            <h1>Orders</h1>
+
+            <table class="OrdersTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody id="tableContent"></tbody>
+            </table>
+
+        </div>
+    </body>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        axios.get('http://localhost:5000/ordersforcustomer').then(result=>{
+            console.log(result);
+
+            const orders = result.data.orders;
+            var rows = '';
+
+            for (var i = 0; i < orders.length; i++) {
+                rows += `
+                    <tr>
+                        <td>${orders[i]._id}</td>
+                        <td>${new Date(orders[i].created).toISOString().substring(0, 10)}</td>
+                        <td>RM${orders[i].amount.toFixed(2)}</td>
+                        <td><button class="DetailsButton"><a class="ButtonLink" href="/customer/orderdetails.html?orderid=${orders[i]._id}">Details</a></button</td>
+                    </tr>
+                `;
+            }
+
+            if (orders.length === 0) {
+                rows = `
+                    <tr>
+                        <td colspan='4'>No past orders</td>
+                    </tr>
+                `;
+            }
+
+            document.getElementById('tableContent').innerHTML = rows;
+
+        }).catch(error=>{
+            console.log(error);
+        });
+
+    </script>
+</html>

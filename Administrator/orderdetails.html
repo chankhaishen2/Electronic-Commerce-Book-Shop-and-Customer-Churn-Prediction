@@ -1,0 +1,154 @@
+<html lang="en">
+    <head>
+        <title>Order Details</title>
+    </head>
+
+    <style>
+        .TopNavigationBar {
+            overflow: hidden;
+            background-color: #24133f;
+        }
+
+        .TopNavigationBar ul {
+            font-size: 25px;
+            list-style-type: none;
+        }
+
+        .TopNavigationBar ul li {
+            padding: 10px 20px;
+            display: inline-block;
+        }
+
+        .TopNavigationBar ul li a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
+        .Content {
+            margin: 30px;
+            text-align: center;
+        }
+
+        .Content h1 {
+            font-size: 40px;
+        }
+
+        .Content p {
+            font-size: 25px;
+            text-align: left;
+        }
+
+        .ItemTable {
+            width: 100%;
+        }
+
+        .ItemTable th {
+            background-color: #9f6509;
+            color: #ffffff;
+            font-size: 20px;
+            padding: 10px;
+        }
+
+        .ItemTable td {
+            background-color: #c69951;
+            color: #000000;
+            font-size: 20px;
+            padding: 10px;
+        }
+
+    </style>
+
+    <body>
+        <nav class="TopNavigationBar">
+            <ul>
+                <li>
+                    <a href="/administrator/inventory.html">Inventory</a>
+                </li>
+                <li>
+                    <a href="/administrator/churnpredictions.html">Churn Predictions</a>
+                </li>
+                <li>
+                    <a href="/administrator/orders.html">Orders</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="Content">
+
+            <h1>Order Details</h1>
+
+            <p id="date">Date: </p>
+
+            <p id="customerName">Customer name: </p>
+
+            <table class="ItemTable">
+                <thead>
+                    <tr>
+                        <th>Item name</th>
+                        <th>Weight (one item)</th>
+                        <th>Price (one item)</th>
+                        <th>Quantity</th>
+                        <th>Total price</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tableContent"></tbody>
+            </table>
+
+        </div>
+    </body>
+
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        console.log(params.get('orderid'));
+
+        axios.get('/oneorderforadmin?orderId=' + params.get('orderid')).then(response=>{
+            console.log(response);
+
+            const order = response.data.order;
+
+            const date = new Date(order.created).toISOString().substring(0, 10);
+            document.getElementById('date').innerHTML = 'Date: ' + date;
+
+            document.getElementById('customerName').innerHTML = 'Customer name: ' + order.customerName;
+
+            var rows = '';
+
+            for (var i = 0; i < order.items.length; i++) {
+                const totalPrice = order.items[i].price * order.items[i].quantity;
+
+                rows += `
+                    <tr>
+                        <td>${order.items[i].itemName}</td>
+                        <td>${order.items[i].weight.toFixed(3)}kg</td>
+                        <td>RM${order.items[i].price.toFixed(2)}</td>
+                        <td>${order.items[i].quantity}</td>
+                        <td>RM${totalPrice.toFixed(2)}</td>
+                    </tr>
+                `;
+            }
+
+            rows += `
+                <tr>
+                    <td colspan='4'>Amount</td>
+                    <td>RM${order.amount.toFixed(2)}</td>
+                </tr>
+            `;
+
+            document.getElementById('tableContent').innerHTML = rows;
+
+        }).catch(error=>{
+            console.log(error);
+
+            if (error.response.status === 400) {
+                alert(error.response.data.message);
+            }
+            else {
+                alert('Fail to load order.');
+            }
+        });
+
+    </script>
+</html>
