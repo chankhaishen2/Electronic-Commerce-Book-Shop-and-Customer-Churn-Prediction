@@ -503,33 +503,33 @@ app.get('/predictchurn', adminLogin, (req, res)=>{
             xs.push([ses_rec, ses_rec_avg, ses_rec_sd, ses_rec_cv, user_rec, ses_n, int_n, int_n_r, tran_n, tran_n_r, rev_sum, rev_sum_r]);
         }
 
-    const xs_tensor = tf.tensor(xs);
+        const xs_tensor = tf.tensor(xs);
 
-    tf.loadLayersModel('file://' + path.join(__dirname + '/ChurnModel/model.json')).then(model=>{
-        console.log('Loaded model');
-        
-        const predictions = model.predict(xs_tensor);
+        tf.loadLayersModel('file://' + path.join(__dirname + '/ChurnModel/model.json')).then(model=>{
+            console.log('Loaded model');
+            
+            const predictions = model.predict(xs_tensor);
 
-        predictions.data().then(values=>{
-            console.log('Downloaded predicted value', values);
+            predictions.data().then(values=>{
+                console.log('Downloaded predicted value', values);
 
-            for (var j = 0; j < values.length; j++) {
-                predictionList[j].churnProbability = values[j];
-            }
+                for (var j = 0; j < values.length; j++) {
+                    predictionList[j].churnProbability = values[j];
+                }
 
-            res.status(200).json({
-                predictionList: predictionList
+                res.status(200).json({
+                    predictionList: predictionList
+                });
+
+            }).catch(error=>{
+                console.log('Download predicted value error', error);
+                res.sendStatus(500);
             });
 
         }).catch(error=>{
-            console.log('Download predicted value error', error);
+            console.log('Load model error', error);
             res.sendStatus(500);
         });
-
-    }).catch(error=>{
-        console.log('Load model error', error);
-        res.sendStatus(500);
-    });
 
     }).catch(error=>{
         console.log('Find customer error', error);

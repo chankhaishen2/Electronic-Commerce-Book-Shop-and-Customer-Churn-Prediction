@@ -53,6 +53,7 @@ function customerLogin(req, res, next) {
         });
     }).catch(error=>{
         console.log('Find customer error', error);
+        res.sendStatus(500);
     });
 }
 

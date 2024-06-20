@@ -53,6 +53,7 @@ function adminLogin(req, res, next) {
         });
     }).catch(error=>{
         console.log('Find administrator error', error);
+        res.sendStatus(500);
     });
 }
 
