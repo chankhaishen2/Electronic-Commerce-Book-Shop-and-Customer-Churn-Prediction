@@ -1,5 +1,5 @@
-# e-commerce-book-shop-back-end
-This is the back end server for e-commerce book shop website.
+# Electronic-Commerce-Book-Shop-and-Customer-Churn-Prediction
+This is the server for electronic commerce book shop website with customer churn prediction using artificial neural network powered by TensorFlow.js.
 
 # User Guide
 1. Open the folder using Visual Studio Code.
